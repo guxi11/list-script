@@ -23,12 +23,17 @@ export const caddr = (exp: Cons | Literal | null): Cons | Literal | null => cdr(
 export type Expression = Array<string | number | boolean>;
 export type NestedExpression = Array<string|number|boolean|Expression|NestedExpression>;
 
-export function getExpression(node: Cons | Literal | null): NestedExpression | string | number | boolean {
+export function getExpression(node: Cons | Literal | null, visited = new Set<Cons>()): NestedExpression | string | number | boolean {
   if (isLit(node)) return value(node as Literal);
 
   if (node === null) return [];
 
-  const car_ = isLit(car(node)) ? value(car(node) as Literal) : getExpression(car(node));
+  if (visited.has(node as Cons)) {
+    return ['...'];
+  }
+  visited.add(node as Cons);
+
+  const car_ = isLit(car(node)) ? value(car(node) as Literal) : getExpression(car(node), new Set(visited));
 
   if (cdr(node) === null) {
     return [car_];
@@ -36,7 +41,7 @@ export function getExpression(node: Cons | Literal | null): NestedExpression | s
     // pressume cdr can only be literal when car is as well
     return [`${car_ as string} . ${value(cdr(node) as Literal) ?? ''}`];
   } else {
-    return [car_, ...(getExpression(cdr(node)) as NestedExpression)];
+    return [car_, ...(getExpression(cdr(node), visited) as NestedExpression)];
   }
 }
 
